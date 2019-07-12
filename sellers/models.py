@@ -22,3 +22,4 @@ class Sales(models.Model):
 
 class Check_comission(models.Model):
     sales = models.ForeignKey(Sales, on_delete=models.CASCADE)
+# Mudar esta classe para um método da classe Sales
