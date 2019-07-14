@@ -1,0 +1,308 @@
+#%RAML 1.0
+title: Telesales Comission Calculator API
+baseUri: https://telesales-comission-calculator.herokuapp.com/
+protocols: [HTTP, HTTPS]
+mediaType: application/json
+description: API to calculate telesales comissions
+version: 1.0.0
+securitySchemes: 
+  JWT:
+    description: Authenticate to execute mathods within the API
+    type: x-{other}
+    describedBy: 
+        headers:
+            Authorization:
+                description: X-AuthToken
+                type: string
+                required: true
+        responses:
+            401:
+                description: Authentication problem (JWT not set or expired)
+    settings:
+        roles: []
+types:
+    Auth:
+        type: object
+        discriminator: token
+        properties:
+            token: string
+    Sellers:
+        type: object
+        discriminator: seller_id
+        properties:
+            client_id: integer
+            name: string
+            address: string
+            phone: integer
+            age: integer
+            email: string
+            cpf: integer
+            comision_id: integer
+        example:
+            seller_id: 1
+            name: "José Vendedor"
+            address: "Rua abcd, 123"
+            phone: 48012345678
+            age: 30
+            email: "email@email.com"
+            cpf: 12345678910
+            comission_id: 1
+    Comissions:
+        type: object
+        discriminator: comission_id
+        properties:
+            comission_id: integer
+            lower_percentage: number
+            upper_percentage: number
+            min_value: number
+        example:
+            comission_id: 1
+            lower_percentage: 2.5
+            upper_percentage: 10.50
+            min_value: 5000.00
+    Sales:
+        type: object
+        discriminator: sales_id
+        properties:
+            sales_id: integer
+            month: integer
+            amount: number
+            seller_id: integer
+            comission: number
+        example:
+            sales_id: 10
+            month: 2
+            amount: 10000.00
+            seller_id: 10
+            comission: 300.89
+/auth/token:
+    post:
+        description: Create an access token
+        body:
+            application/json:
+                username:
+                    displayName: Username
+                    type: string
+                    description: username
+                    example: "squadmember"
+                    required: true
+                password:
+                    displayName: Password
+                    type: string
+                    description: Password
+                    example: "password"
+                    required: true
+        responses:
+            201:
+                body:
+                    application/json:
+                        example: {"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6Im1hcmNlbG8iLCJleHAiOjE1NTg3NjI5NTgsImVtYWlsIjoibWFyY2Vsby5taWxlcmlzQGdtYWlsLmNvbSJ9.XzzOy9yovI2mCLUuIWhAIxkI0XgldBeWgzmqPU3e4RQ"}
+            400:
+                body:
+                    application/json:
+                        example: {"Message": "Unable to login with provided username / password"}
+/sellers:
+    post:
+        description: Create a seller on the database
+        securedBy: JWT
+        body:
+            application/json:
+                properties:
+                    name:
+                        displayName: Seller's name
+                        type: string
+                        description: Seller's name
+                        example: "José Vendedor"
+                        required: true
+                    address:
+                        displayName: Seller's address
+                        type: string
+                        description: Seller's full address information
+                        example: "Rua abcd, 123"
+                        required: true
+                    phone:
+                        displayName: Seller's phone number
+                        type: integer
+                        description: Seller's telephone number
+                        example: 48012345678
+                        required: true
+                    age:
+                        displayName: Seller's age
+                        type: integer
+                        description: Seller's age
+                        example: 30
+                        required: true
+                    email:
+                        displayName: Seller's e-mail
+                        type: string
+                        description: Seller's e-mail address
+                        example: "email@email.com"
+                        required: true
+                    cpf:
+                        displayName: Seller's CPF
+                        type: integer
+                        description: Seller's CPF number
+                        example: 12345678910
+                        required: true
+                    comission_plan:
+                        displayName: Comission plan
+                        type: integer
+                        description: Seller's chosen comission plan
+                        example: 1
+                        required: true
+                example:
+                    name: "José Vendedor"
+                    address: "Rua abcd, 123"
+                    phone: 48012345678
+                    age: 30
+                    email: "email@email.com"
+                    cpf: 12345678910
+                    comission_id: 1
+        responses:
+            201:
+                body:
+                    application/json:
+                        example: {"id": 100}
+            400:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
+            401:
+                body:
+                    application/json:
+                        example: {"message": "Forbidden"}
+/comissions:
+    post:
+        description: Creates a comission plan and store it on the database
+        securedBy: JWT
+        body:   
+            application/json:
+                properties:
+                    lower_percentage:
+                        displayName: Lower percentage
+                        type: number
+                        description: Lower comission percentage
+                        example: 2.5
+                        required: true
+                    upper_percentage:
+                        displayName: Upper percentage
+                        type: number
+                        description: Upper comission percentage
+                        example: 10.50
+                        required: true
+                    min_value:
+                        displayName: Minimum value
+                        type: number
+                        description: Minimum value between upper and lower percentage earnings
+                        example: 5000.00
+                        required: true
+                example:
+                    lower_percentage: 2.5
+                    upper_percentage: 10.50
+                    min_value: 5000.00
+        responses:
+            201:
+                body:
+                    application/json:
+                        example: {"id": 10}
+            400:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
+            401:
+                body:
+                    application/json:
+                        example: {"message": "Forbidden"}
+/month_comission:
+    post:
+        description: Inputs total sales amount by month and seller
+        securedBy: JWT
+        body:
+            application/json:
+                properties:
+                    seller_id:
+                        displayName: Seller's id
+                        type: integer
+                        description: Seller's id read from database
+                        example: 10
+                        required: true
+                    amount:
+                        displayName: Monthly sales amount
+                        type: number
+                        description: Total monthly sales amount
+                        example: 10000.00
+                        required: true
+                    month:
+                        displayName: Month
+                        type: integer
+                        description: Month to register sales
+                        example: 2
+                        required: true
+                example:
+                    seller_id: 10
+                    amount: 10000.00
+                    month: 2
+        responses:
+            201:
+                body:
+                    application/json:
+                        example: {"id": 100, "comission": 300.89}
+            400:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
+            401:
+                body:
+                    application/json:
+                        example: {"message": "Forbidden"}
+/vendedores/{month}:
+    get:
+        description: Retrieve seller's list, ordered by comissions
+        securedBy: JWT
+        responses:
+            200:
+                body:
+                    application/json:
+                        example: [{“name”: “Vendedor1”, “id”: 10, “comission”: 1000.00}, {“name”: “Vendedor2”, “id”: 15, “comission”: 900.00}]
+            400:
+                body:
+                    application/json:
+                        example:
+                            not_found:
+                                body: {"message": "Month not found"}
+                                description: When month_comission/month not found on the database
+/check_comission:
+    post:
+        description: Calculates 5-month average comissions to seller and informs if seller should be notified
+        securedBy: JWT
+        body:
+            application/json:
+                properties:
+                    seller_id:
+                        displayName: Seller's ID
+                        type: string
+                        description: Seller's ID for comission check
+                        example: 10
+                        required: true
+                    amount:
+                        displayName: Sales amount
+                        type: number
+                        description: Total sales amount for comission verification
+                        example: 1000.65
+                        required: true
+                example:
+                    seller_id: 10
+                    amount: 1000.65
+        responses:
+            201:
+                body:
+                    application/json:
+                        example: {"notified": false}
+            400:
+                body:
+                    application/json:
+                        eaxmple: {"message": "Page not found on the server"}
+            401:
+                body:
+                    application/json:
+                        example: {"message": "Forbidden"}
