@@ -166,11 +166,15 @@ types:
             400:
                 body:
                     application/json:
-                        example: {"message": "Page not found on the server"}
+                        example: {"message": "Bad request. Please check syntax and try again"}
             401:
                 body:
                     application/json:
                         example: {"message": "Forbidden"}
+            404:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
 /comissions:
     post:
         description: Creates a comission plan and store it on the database
@@ -208,11 +212,15 @@ types:
             400:
                 body:
                     application/json:
-                        example: {"message": "Page not found on the server"}
+                        example: {"message": "Bad request. Please check syntax and try again"}
             401:
                 body:
                     application/json:
                         example: {"message": "Forbidden"}
+            404:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
 /month_comission:
     post:
         description: Inputs total sales amount by month and seller
@@ -250,11 +258,15 @@ types:
             400:
                 body:
                     application/json:
-                        example: {"message": "Page not found on the server"}
+                        example: {"message": "Bad request. Please check syntax and try again"}
             401:
                 body:
                     application/json:
                         example: {"message": "Forbidden"}
+            404:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
 /vendedores/{month}:
     get:
         description: Retrieve seller's list, ordered by comissions
@@ -301,8 +313,12 @@ types:
             400:
                 body:
                     application/json:
-                        eaxmple: {"message": "Page not found on the server"}
+                        eaxmple: {"message": "Bad request. Please check syntax and try again"}
             401:
                 body:
                     application/json:
                         example: {"message": "Forbidden"}
+            404:
+                body:
+                    application/json:
+                        example: {"message": "Page not found on the server"}
