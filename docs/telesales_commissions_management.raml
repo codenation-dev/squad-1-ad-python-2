@@ -1,0 +1,180 @@
+#%RAML 1.0
+title: squad-1-ad-python-2
+version: v0.01
+baseUri: http://apisalescomission.heroku.mmustchange
+documentation: 
+  - title: Telesales commissions management
+  content: Manage the salers comissions
+mediaType: application/json
+protocols: [HTTP, HTTPS]
+
+securitySchemes:
+  JWT:
+    description: Authentic this to any method that needs a valid JWT to be set.
+    type: x-{other}
+    describedBy:
+      headers:
+        Authorization:
+            description: X-AuthToken
+            type: string
+            required: true
+      responses:
+        401:
+          description: Authentication problem (JWT not set or expired)
+
+types: 
+    Seller: 
+      properties: 
+        name:
+          description: Seller's fullname
+          type: string
+        address: 
+          description: Seller's address
+          type: string
+        phone: 
+          description: Seller's number
+          type: string
+        age: 
+          description: Seller's age
+          type: integer
+        email: 
+          description: Seller's email address
+          type: string
+        cpf: 
+          description: Seller's CPF
+          type: string
+        commission_plan: 
+          description: Seller's Comission Plan Foreign Key
+          type: integer
+      example: {
+        "name": "José Vendedor",
+        "address": "Rua abcd, 123",
+        "phone": "48012345678",
+        "age": 30,
+        "email": "email@email.com",
+        "cpf": "12345678910",
+        "commission_plan": 1
+        }        
+    Commission_plan:
+      properties: 
+        lower_percentage:
+          description: If the seller sells up to minimu_value, he/she receives lower_percentage of comission
+          type: number
+          format: float
+        min_value: 
+          description: Reference value to choose which commission the seller will receive. 
+          type: number
+          format: float
+        upper_percentage:
+          description: If the seller sells above the minimu_value, he/she receives upper_percentage of comission
+          type: number
+          format: float
+      example: {
+        "lower_percentage": 2.5,
+        "min_value": 5000.00,
+        "upper_percentage": 10.5
+        }
+    Month_comission:
+      properties: 
+        seller:
+          description: The seller's id
+          type: integer
+        amount:
+          description: Total seller's sales in the given month
+          type: number
+          format: float
+        month:
+          description: Sale's month
+          type: integer
+
+traits:
+  dataValidation:
+    responses:
+      400:
+        description: Parameters received on body request are not valid 
+        body:
+          properties:
+            error: string
+            code: string
+  uriValidation:
+    responses: 
+      404:
+        description: ID received on uri not found
+        body: 
+          properties:
+            error: string
+            code: string     
+
+/sellers:
+  post:
+    description: Create a seller in the system.
+    body:
+      type: Seller
+    responses:
+      201:
+        description: Return the seller's id
+        body:
+          application/json:
+            example: {“id”: 100}
+
+/comissions:
+  post:
+    description: Create a comission plan in the system.
+    body:
+      type: Commission_plan
+    responses:
+      201:
+        description: Return the Commission_plan's id
+        body:
+          application/json:
+            example: {“id”: 10}
+
+/month_comission:
+  post:
+    description: Input the seller's amount in the month.
+    body:
+      type: Month_comission
+    responses:
+      201:
+        description: Return OK
+
+/vendedores:
+  /{month}:
+    get:
+      description: Get a list of sellers and their comissions in a given month.
+      responses:
+        200:
+          body:
+            application/json:
+              example: |
+                {
+                  "ordered_comission": [
+                    {
+                      "name": "Vendedor1", 
+                      "id": 10, 
+                      "comission": 1000.00
+                    }, 
+                    {
+                      "name": "Vendedor2", 
+                      "id": 15, 
+                      "comission": 900.00
+                    }
+                  ]
+                }
+      
+/check_commision
+  post:
+    description: Request to verify whether the seller is to be notified.
+    body:
+      application/json:
+              example: |
+                {
+                  "seller": 10,
+                  "amount": 1000.65
+                }
+    responses:
+      200:
+        description: Validation True or False
+        body:
+          application/json:
+            example: {"should_notify": True}
