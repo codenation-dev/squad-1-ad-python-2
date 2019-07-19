@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 
 
 class Comission_plan(models.Model):
@@ -37,4 +38,10 @@ class Sales(models.Model):
             comission = amount * sellers.plan.lower_percentage / 100
         else:
             comission = amount * sellers.plan.upper_percentage / 100
-        return comission
+        return round(comission, 2)
+    
+    def sales_month(self, sellers, amount, month):
+        s = Sales(sellers, Decimal(amount), month)
+        s.comission = self.calc_comission(sellers, Decimal(amount), month)
+        s.save()
+        return s.id
