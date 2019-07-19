@@ -33,15 +33,18 @@ class Sales(models.Model):
     def __str__(self):
         return "%s" % self.sellers_id.name
     
-    def calc_comission(self, sellers, amount, month):
-        if amount <= sellers.plan.min_value:
-            comission = amount * sellers.plan.lower_percentage / 100
+    def calc_comission(self, seller, amount):
+        sel_calc = Sellers.objects.get(id=seller)
+        if amount <= sel_calc.plan.min_value:
+            comission = amount * sel_calc.plan.lower_percentage / 100
         else:
-            comission = amount * sellers.plan.upper_percentage / 100
+            comission = amount * sel_calc.plan.upper_percentage / 100
         return round(comission, 2)
     
-    def sales_month(self, sellers, amount, month):
-        s = Sales(sellers, Decimal(amount), month)
-        s.comission = self.calc_comission(sellers, Decimal(amount), month)
+    def sales_month(self, seller, amount, month):
+        sel_month = Sellers.object.get(id=seller)
+        month_amount = Decimal(amount)
+        s = Sales(sellers_id=sel_month, amount=month_amount, month=month)
+        s.comission = self.calc_comission(seller, month_amount)
         s.save()
-        return s.id
+        return s.id, s.comission
