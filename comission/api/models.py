@@ -20,6 +20,8 @@ class Sellers(models.Model):
 
     def __str__(self):
         return self.name
+    
+    # Envio de e-mail para vendedores abaixo da média.
 
 class Sales(models.Model):
     month = models.IntegerField()
@@ -34,5 +36,5 @@ class Sales(models.Model):
         if amount <= sellers.plan.min_value:
             comission = amount * sellers.plan.lower_percentage / 100
         else:
-            comission = amount * sellers.plan.lower_percentage / 100
+            comission = amount * sellers.plan.upper_percentage / 100
         return comission
