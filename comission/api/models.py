@@ -62,7 +62,6 @@ class Sales(models.Model):
                       Sales.objects.filter(month=month)], key=lambda x: x['comission'], reverse=True)
 
     def check_exists(self, seller):
-        month = datetime.datetime.now().month
         for i in range(len(Sales.objects.filter(sellers_id=seller))):
             try:
                 Sales.objects.get(sellers_id=seller, month=i)
@@ -84,11 +83,11 @@ class Sales(models.Model):
         avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
                      dividend)
         cut_amount = avg_sales - (avg_sales * 10 / 100)
-        notify = [ig('check_amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('check_amount')
+        notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
                     (sorted_sales[i]) < cut_amount and ig('month') == month]
         if notify is True:
-            print("should_notify: true")
-            return notify
+            out_message = {"should_notify": True}
+            return out_message
         else:
-            print("should_notify: false")
-            return []
+            out_message = {"should_notify": False}
+            return out_message
