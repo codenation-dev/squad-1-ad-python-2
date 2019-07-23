@@ -2,6 +2,7 @@ from django.db import models
 from decimal import Decimal
 import datetime
 from operator import itemgetter as ig
+from django.core.mail import send_mail
 
 
 class MyDecimal(Decimal):
@@ -43,15 +44,15 @@ class Sales(models.Model):
     def calc_comission(self, seller, amount):
         sel_calc = Sellers.objects.get(id=seller)
         dec_amount = MyDecimal(amount)
-        if dec_amount <= Decimal(sel_calc.plan.min_value):
-            comission = dec_amount * Decimal(sel_calc.plan.lower_percentage / 100)
+        if dec_amount <= MyDecimal(sel_calc.plan.min_value):
+            comission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
         else:
-            comission = dec_amount * Decimal(sel_calc.plan.upper_percentage / 100)
+            comission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
         return MyDecimal(round(comission, 2))
 
     def sales_month(self, seller, amount, month):
         sel_month = Sellers.objects.get(id=seller)
-        month_amount = Decimal(amount)
+        month_amount = MyDecimal(amount)
         s = Sales(sellers_id=sel_month, amount=month_amount, month=month)
         s.comission = self.calc_comission(seller, month_amount)
         s.save()
@@ -84,9 +85,16 @@ class Sales(models.Model):
                      dividend)
         cut_amount = avg_sales - (avg_sales * 10 / 100)
         notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
-                    (sorted_sales[i]) < cut_amount and ig('month') == month]
-        if notify is True:
+                    (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
+        if notify is not []:
             out_message = {"should_notify": True}
+            send_mail(
+                'Notificação - valor de vendas',
+                'Suas vendas no mês estão abaixo da média mensal.',
+                'comission_admin@mail.com',
+                [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
+                fail_silently=False
+            )
             return out_message
         else:
             out_message = {"should_notify": False}
