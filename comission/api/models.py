@@ -70,32 +70,35 @@ class Sales(models.Model):
                 i += 1
         return i
 
-    def check_comission(self, seller, amount):
-        month = datetime.datetime.now().month
-        check_amount = self.sales_month(seller, MyDecimal(amount), month)
-        sorted_sales = sorted([{'name': Sales.objects.get(sellers_id=seller, month=i).sellers_id.name, 'month':
-                                Sales.objects.get(sellers_id=seller, month=i).month, 'amount':
-                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).amount), 'comission':
-                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).comission)} for i in
-                              range(month+1-self.check_exists(seller), month+1)], key=ig('comission'), reverse=True)
-        dividend = sum([len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])
-                        - i for i in range(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in
-                                                range(len(sorted_sales))]))])
-        avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
-                     dividend)
-        cut_amount = avg_sales - (avg_sales * 10 / 100)
-        notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
-                    (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
-        if notify is not []:
-            out_message = {"should_notify": True}
-            send_mail(
+    def notify_seller(self, seller, month):
+        send_mail(
                 'Notificação - valor de vendas',
                 'Suas vendas no mês estão abaixo da média mensal.',
                 'comission_admin@mail.com',
                 [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
                 fail_silently=False
-            )
+        )
+    
+    def check_comission(self, seller, amount):
+        month = datetime.datetime.now().month
+        self.sales_month(seller, MyDecimal(amount), month)
+        sorted_sales = sorted([{'name': Sales.objects.get(sellers_id=seller, month=i).sellers_id.name, 'month':
+                                Sales.objects.get(sellers_id=seller, month=i).month, 'amount':
+                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).amount), 'comission':
+                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).comission)} for i in
+                              range(month+1-self.check_exists(seller), month+1)], key=ig('comission'), reverse=True)
+        divide = sum([len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])
+                        - i for i in range(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in
+                                                range(len(sorted_sales))]))])
+        avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
+                        divide)
+        cut_amount = avg_sales - (avg_sales * 10 / 100)
+        notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
+                    (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
+        if notify is not []:
+            out_message = {"seller_notified": True}
+            self.notify_seller(seller, month)
             return out_message
         else:
-            out_message = {"should_notify": False}
+            out_message = {"seller_notified": False}
             return out_message
