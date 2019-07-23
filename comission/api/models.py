@@ -1,13 +1,23 @@
 from django.db import models
+from decimal import Decimal
+import datetime
+from operator import itemgetter as ig
+from django.core.mail import send_mail
+
+
+class MyDecimal(Decimal):
+    def __repr__(self):
+        return str(float(self))
 
 
 class Comission_plan(models.Model):
     lower_percentage = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="lo")
     upper_percentage = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="up")
-    min_value = models.DecimalField(max_digits=19, decimal_places=2,verbose_name="min")
+    min_value = models.DecimalField(max_digits=19, decimal_places=2, verbose_name="min")
 
     def __srt__(self):
-        return "Plano: %s" % self.id
+        return self.id
+
 
 class Sellers(models.Model):
     name = models.CharField(max_length=100)
@@ -20,8 +30,7 @@ class Sellers(models.Model):
 
     def __str__(self):
         return self.name
-    
-    # Envio de e-mail para vendedores abaixo da média.
+
 
 class Sales(models.Model):
     month = models.IntegerField()
@@ -30,11 +39,66 @@ class Sales(models.Model):
     comission = models.DecimalField(max_digits=20, decimal_places=2)
 
     def __str__(self):
-        return "%s" % self.sellers_id.name
-    
-    def calc_comission(self, sellers, amount, month):
-        if amount <= sellers.plan.min_value:
-            comission = amount * sellers.plan.lower_percentage / 100
+        return "Seller: %s" % self.sellers_id.name
+
+    def calc_comission(self, seller, amount):
+        sel_calc = Sellers.objects.get(id=seller)
+        dec_amount = MyDecimal(amount)
+        if dec_amount <= MyDecimal(sel_calc.plan.min_value):
+            comission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
         else:
-            comission = amount * sellers.plan.upper_percentage / 100
-        return comission
+            comission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
+        return MyDecimal(round(comission, 2))
+
+    def sales_month(self, seller, amount, month):
+        sel_month = Sellers.objects.get(id=seller)
+        month_amount = MyDecimal(amount)
+        s = Sales(sellers_id=sel_month, amount=month_amount, month=month)
+        s.comission = self.calc_comission(seller, month_amount)
+        s.save()
+        return s.id, MyDecimal(s.comission)
+
+    def return_sellers(self, month):
+        return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "comission": MyDecimal(i.comission)} for i in
+                      Sales.objects.filter(month=month)], key=lambda x: x['comission'], reverse=True)
+
+    def check_exists(self, seller):
+        for i in range(len(Sales.objects.filter(sellers_id=seller))):
+            try:
+                Sales.objects.get(sellers_id=seller, month=i)
+            except (Sales.DoesNotExist):
+                i += 1
+        return i
+
+    def notify_seller(self, seller, month):
+        send_mail(
+                'Notificação - valor de vendas',
+                'Suas vendas no mês estão abaixo da média mensal.',
+                'comission_admin@mail.com',
+                [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
+                fail_silently=False
+        )
+    
+    def check_comission(self, seller, amount):
+        month = datetime.datetime.now().month
+        self.sales_month(seller, MyDecimal(amount), month)
+        sorted_sales = sorted([{'name': Sales.objects.get(sellers_id=seller, month=i).sellers_id.name, 'month':
+                                Sales.objects.get(sellers_id=seller, month=i).month, 'amount':
+                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).amount), 'comission':
+                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).comission)} for i in
+                              range(month+1-self.check_exists(seller), month+1)], key=ig('comission'), reverse=True)
+        divide = sum([len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])
+                        - i for i in range(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in
+                                                range(len(sorted_sales))]))])
+        avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
+                        divide)
+        cut_amount = avg_sales - (avg_sales * 10 / 100)
+        notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
+                    (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
+        if notify is not []:
+            out_message = {"seller_notified": True}
+            self.notify_seller(seller, month)
+            return out_message
+        else:
+            out_message = {"seller_notified": False}
+            return out_message
