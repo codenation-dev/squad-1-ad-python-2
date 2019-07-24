@@ -1,6 +1,7 @@
 from django.db import models
 from decimal import Decimal
 import datetime
+import json
 from operator import itemgetter as ig
 from django.core.mail import send_mail
 
@@ -10,7 +11,7 @@ class MyDecimal(Decimal):
         return str(float(self))
 
 
-class Comission_plan(models.Model):
+class Commission_plan(models.Model):
     lower_percentage = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="lo")
     upper_percentage = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="up")
     min_value = models.DecimalField(max_digits=19, decimal_places=2, verbose_name="min")
@@ -26,7 +27,7 @@ class Sellers(models.Model):
     age = models.IntegerField()
     email = models.EmailField(max_length=100)
     cpf = models.IntegerField()
-    plan = models.ForeignKey(Comission_plan, on_delete=models.CASCADE, verbose_name="plan")
+    plan = models.ForeignKey(Commission_plan, on_delete=models.CASCADE, verbose_name="plan")
 
     def __str__(self):
         return self.name
@@ -36,33 +37,47 @@ class Sales(models.Model):
     month = models.IntegerField()
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     sellers_id = models.ForeignKey(Sellers, on_delete=models.CASCADE, primary_key=False, verbose_name="sid")
-    comission = models.DecimalField(max_digits=20, decimal_places=2)
+    commission = models.DecimalField(max_digits=20, decimal_places=2)
 
     def __str__(self):
         return "Seller: %s" % self.sellers_id.name
 
-    def calc_comission(self, seller, amount):
+    def register_commission_plan(self, lo, up, mi):
+        s = Commission_plan(lower_percentage=lo, upper_percentage=up, min_value=mi)
+        s.save()
+        return {"id": s.id}
+    
+    def register_sellers(self, file):
+        with open(file) as json_file:
+            data = json.load(json_file)
+        s = Sellers(name=data["name"], address=data["address"], phone=data["telefone"], age=data["idade"], 
+                    email=data["email"], cpf=data["cpf"])
+        s.plan = Commission_plan.objects.get(id=data["commission_plan"])
+        s.save()
+        return {"id": s.id}
+    
+    def calc_commission(self, seller, amount):
         sel_calc = Sellers.objects.get(id=seller)
         dec_amount = MyDecimal(amount)
         if dec_amount <= MyDecimal(sel_calc.plan.min_value):
-            comission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
+            commission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
         else:
-            comission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
-        return MyDecimal(round(comission, 2))
+            commission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
+        return MyDecimal(round(commission, 2))
 
     def sales_month(self, seller, amount, month):
         sel_month = Sellers.objects.get(id=seller)
         month_amount = MyDecimal(amount)
         s = Sales(sellers_id=sel_month, amount=month_amount, month=month)
-        s.comission = self.calc_comission(seller, month_amount)
+        s.commission = self.calc_commission(seller, month_amount)
         s.save()
-        return s.id, MyDecimal(s.comission)
+        return {"id": s.id, "commission": MyDecimal(s.commission)}
 
     def return_sellers(self, month):
-        return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "comission": MyDecimal(i.comission)} for i in
-                      Sales.objects.filter(month=month)], key=lambda x: x['comission'], reverse=True)
+        return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)} for i in
+                      Sales.objects.filter(month=month)], key=lambda x: x['commission'], reverse=True)
 
-    def check_exists(self, seller):
+    def check_exists(self, seller): # Pegar todas as vendas por vendedor e eliminar esta verificação (order_by limit 5)
         for i in range(len(Sales.objects.filter(sellers_id=seller))):
             try:
                 Sales.objects.get(sellers_id=seller, month=i)
@@ -74,24 +89,20 @@ class Sales(models.Model):
         send_mail(
                 'Notificação - valor de vendas',
                 'Suas vendas no mês estão abaixo da média mensal.',
-                'comission_admin@mail.com',
+                'commission_admin@mail.com',
                 [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
                 fail_silently=False
         )
     
-    def check_comission(self, seller, amount):
+    def check_commission(self, seller, amount):
         month = datetime.datetime.now().month
         self.sales_month(seller, MyDecimal(amount), month)
-        sorted_sales = sorted([{'name': Sales.objects.get(sellers_id=seller, month=i).sellers_id.name, 'month':
-                                Sales.objects.get(sellers_id=seller, month=i).month, 'amount':
-                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).amount), 'comission':
-                                MyDecimal(Sales.objects.get(sellers_id=seller, month=i).comission)} for i in
-                              range(month+1-self.check_exists(seller), month+1)], key=ig('comission'), reverse=True)
-        divide = sum([len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])
-                        - i for i in range(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in
-                                                range(len(sorted_sales))]))])
+        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller).order_by('commission')
+        sorted_sales = sorted([{'name': db_fetch[i].sellers_id.name, 'month': db_fetch[i].month, 'amount': 
+                                MyDecimal(db_fetch[i].amount), 'commission': MyDecimal(db_fetch[i].commission)} 
+                                for i in range(len(db_fetch))], key=ig('commission'), reverse=True) 
         avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
-                        divide)
+                    sum(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])))
         cut_amount = avg_sales - (avg_sales * 10 / 100)
         notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
                     (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
