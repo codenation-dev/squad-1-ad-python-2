@@ -46,16 +46,16 @@ class Sales(models.Model):
         s = Commission_plan(lower_percentage=lo, upper_percentage=up, min_value=mi)
         s.save()
         return {"id": s.id}
-    
+
     def register_sellers(self, file):
         with open(file) as json_file:
             data = json.load(json_file)
-        s = Sellers(name=data["name"], address=data["address"], phone=data["telefone"], age=data["idade"], 
+        s = Sellers(name=data["name"], address=data["address"], phone=data["telefone"], age=data["idade"],
                     email=data["email"], cpf=data["cpf"])
         s.plan = Commission_plan.objects.get(id=data["commission_plan"])
         s.save()
         return {"id": s.id}
-    
+
     def calc_commission(self, seller, amount):
         sel_calc = Sellers.objects.get(id=seller)
         dec_amount = MyDecimal(amount)
@@ -74,16 +74,9 @@ class Sales(models.Model):
         return {"id": s.id, "commission": MyDecimal(s.commission)}
 
     def return_sellers(self, month):
-        return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)} for i in
-                      Sales.objects.filter(month=month)], key=lambda x: x['commission'], reverse=True)
-
-    def check_exists(self, seller): # Pegar todas as vendas por vendedor e eliminar esta verificação (order_by limit 5)
-        for i in range(len(Sales.objects.filter(sellers_id=seller))):
-            try:
-                Sales.objects.get(sellers_id=seller, month=i)
-            except (Sales.DoesNotExist):
-                i += 1
-        return i
+        s = Sales.objects.select_related('sellers_id').filter(month=month)
+        return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)} for
+                      i in s], key=lambda x: x['commission'], reverse=True)
 
     def notify_seller(self, seller, month):
         send_mail(
@@ -93,19 +86,16 @@ class Sales(models.Model):
                 [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
                 fail_silently=False
         )
-    
+
     def check_commission(self, seller, amount):
         month = datetime.datetime.now().month
         self.sales_month(seller, MyDecimal(amount), month)
-        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller).order_by('commission')
-        sorted_sales = sorted([{'name': db_fetch[i].sellers_id.name, 'month': db_fetch[i].month, 'amount': 
-                                MyDecimal(db_fetch[i].amount), 'commission': MyDecimal(db_fetch[i].commission)} 
-                                for i in range(len(db_fetch))], key=ig('commission'), reverse=True) 
-        avg_sales = (sum([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))]) /
-                    sum(len([ig('amount')(sorted_sales[i]) * (len(sorted_sales) - i) for i in range(len(sorted_sales))])))
+        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller).order_by('-commission')
+        avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) / sum([len(db_fetch)
+                     - i for i in range(len(db_fetch))]))
         cut_amount = avg_sales - (avg_sales * 10 / 100)
-        notify = [ig('amount')(sorted_sales[i]) for i in range(len(sorted_sales)) if ig('amount')
-                    (sorted_sales[i]) < cut_amount and ig('month')(sorted_sales[i]) == month]
+        notify = ([db_fetch[i].amount for i in range(len(db_fetch)) if db_fetch[i].amount < cut_amount and
+                  db_fetch[i].month == month])
         if notify is not []:
             out_message = {"seller_notified": True}
             self.notify_seller(seller, month)
