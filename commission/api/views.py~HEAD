@@ -14,7 +14,6 @@ def sellers(request):
             return Response({"id": serializer.data["id"]}, status=status.HTTP_201_CREATED)
         return Response({"message": "Bad request. Please check syntax and try again"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(["POST"])
 def commissions(request):
     if request.method == "POST":
@@ -24,14 +23,12 @@ def commissions(request):
             return Response({"id": serializer.data["id"]}, status=status.HTTP_201_CREATED)
         return Response({"message": "Bad request. Please check syntax and try again"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(["POST"])
 def month_commission(request):
     if request.method == "POST":
         try:
                 calc = Sales()
-                calculated_amount = calc.calc_commission(
-                    request.data["sellers_id"], request.data["amount"])
+                calculated_amount = calc.calc_commission(request.data["sellers_id"], request.data["amount"])
         except:
                 return Response({"message": "Bad request. Please check syntax and try again"}, status=status.HTTP_400_BAD_REQUEST)
         request.data["commission"] = calculated_amount
@@ -41,13 +38,11 @@ def month_commission(request):
             return Response({"id": serializer.data["id"], "commission": serializer.data["commission"], }, status=status.HTTP_201_CREATED)
         return Response({"message": "Bad request. Please check syntax and try again"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(["GET"])
 def vendedores(request, month):
     if request.method == "GET":
         rs = Sales()
         return Response(rs.return_sellers(month))
-
 
 @api_view(["POST"])
 def check_commission(request):
