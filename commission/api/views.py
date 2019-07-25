@@ -48,8 +48,6 @@ def vendedores(request, month):
 def check_commission(request):
     if request.method == "POST":
         serializer = CheckCommissionSerializer(data=request.data)
-        print(serializer.is_valid())
-        print(serializer.errors)
         if serializer.is_valid():
             cc = Sales()
             return Response(cc.check_commission(request.data["sellers_id"], request.data["amount"]), status=status.HTTP_201_CREATED)
