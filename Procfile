@@ -1,1 +1,1 @@
-web: gunicorn commission.commission.wsgi --max-requests 1200
+web: gunicorn commission.wsgi --max-requests 1200
