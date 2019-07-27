@@ -43,12 +43,15 @@ class Sales(models.Model):
         return "Seller: %s" % self.sellers_id.name
     
     def calc_commission(self, seller, amount):
-        sel_calc = Sellers.objects.get(id=seller)
-        dec_amount = MyDecimal(amount)
-        if dec_amount <= MyDecimal(sel_calc.plan.min_value):
-            commission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
+        if not Sellers.objects.filter(id=seller):
+            return "Vendedor não cadastrado. Favor verificar os dados de entrada."
         else:
-            commission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
+            sel_calc = Sellers.objects.get(id=seller)
+            dec_amount = MyDecimal(amount)
+            if dec_amount <= MyDecimal(sel_calc.plan.min_value):
+                commission = dec_amount * MyDecimal(sel_calc.plan.lower_percentage / 100)
+            else:
+                commission = dec_amount * MyDecimal(sel_calc.plan.upper_percentage / 100)
         return MyDecimal(round(commission, 2))
 
     def sales_month(self, seller, amount, month):
@@ -64,37 +67,43 @@ class Sales(models.Model):
 
     def return_sellers(self, month):
         if not Sales.objects.filter(month=month):
-            return "Não existem vendas cadastradas para este mês!"
+            return "Não existem vendas cadastradas para este mês. Favor verificar os dados de entrada"
         else:
             s = Sales.objects.select_related('sellers_id').filter(month=month)
             return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)}
                           for i in s], key=lambda x: x['commission'], reverse=True)
 
     def notify_seller(self, seller, month):
-        send_mail(
-                'Notificação - valor de vendas',
-                'Suas vendas no mês estão abaixo da média mensal.',
-                'commission_admin@mail.com',
-                [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
-                fail_silently=False
-        )
+        if not Sales.objects.filter(sellers_id=seller, month=month):
+            return "Dados incorretos. Favor verificar e tentar novamente."
+        else:
+            send_mail(
+                    'Notificação - valor de vendas',
+                    'Suas vendas no mês estão abaixo da média mensal.',
+                    'commission_admin@mail.com',
+                    [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
+                    fail_silently=False
+            )
     
     def check_commission(self, seller, amount):
         month = datetime.datetime.now().month
-        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller).order_by('-commission')
-        for i in range(len(db_fetch)):
-            if db_fetch[i].month == month:
-                db_fetch[i].amount = MyDecimal(amount)
-                db_fetch[i].commission = calc_commission(seller, amount)
-            db_fetch.order_by('-commission')
-        avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) / sum([len(db_fetch)
-                     - i for i in range(len(db_fetch))]))
-        cut_amount = avg_sales - (avg_sales * 10 / 100)
-        notify = ([db_fetch[i].amount for i in range(len(db_fetch)) if db_fetch[i].amount < cut_amount and
-                  db_fetch[i].month == month])
-        if not notify:
-            out_message = {"seller_notified": False}
+        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
+        if not db_fetch:
+            return "Vendedor não cadastrado. Favor verificar os dados de entrada."
         else:
-            out_message = {"seller_notified": False}
-            self.notify_seller(seller, month)
-        return out_message
+            for i in range(len(db_fetch)):
+                if db_fetch[i].month == month:
+                    db_fetch[i].amount = MyDecimal(amount)
+                    db_fetch[i].commission = calc_commission(seller, amount)
+                db_fetch.order_by('-commission')
+            avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) / 
+                         sum([len(db_fetch) - i for i in range(len(db_fetch))]))
+            cut_amount = avg_sales - (avg_sales * 10 / 100)
+            notify = ([db_fetch[i].amount for i in range(len(db_fetch)) if db_fetch[i].amount < cut_amount and
+                    db_fetch[i].month == month])
+            if not notify:
+                out_message = {"seller_notified": False}
+            else:
+                out_message = {"seller_notified": False}
+                self.notify_seller(seller, month)
+            return out_message
