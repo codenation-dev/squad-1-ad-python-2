@@ -104,6 +104,6 @@ class Sales(models.Model):
             if not notify:
                 out_message = {"seller_notified": False}
             else:
-                out_message = {"seller_notified": False}
+                out_message = {"seller_notified": True}
                 self.notify_seller(seller, month)
             return out_message
