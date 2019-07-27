@@ -156,7 +156,7 @@ Exemplo de requisição para verificar se o vendedor deve ser notificado:
     {“seller_notified”: true}
 
 ## squad-1-ad-python-2
-=======
+
 POST /check_commision
 
 {“seller”: 10, “amount”: 1000.65}
