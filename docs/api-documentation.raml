@@ -1,6 +1,6 @@
 #%RAML 1.0
 title: Telesales Commission Calculator API
-baseUri: https://telesales-commission-calculator.herokuapp.com/
+baseUri: https://commission-squad1.herokuapp.com/
 protocols: [HTTP, HTTPS]
 mediaType: application/json
 description: API to calculate telesales commissions
@@ -28,7 +28,7 @@ types:
             token: string
     Sellers:
         type: object
-        discriminator: seller_id
+        discriminator: sellers_id
         properties:
             client_id: integer
             name: string
@@ -39,14 +39,14 @@ types:
             cpf: integer
             comision_id: integer
         example:
-            seller_id: 1
+            sellers_id: 1
             name: "José Vendedor"
             address: "Rua abcd, 123"
             phone: 48012345678
             age: 30
             email: "email@email.com"
             cpf: 12345678910
-            commission_id: 1
+            plan: 1
     Commissions:
         type: object
         discriminator: commission_id
@@ -67,13 +67,13 @@ types:
             sales_id: integer
             month: integer
             amount: number
-            seller_id: integer
+            sellers_id: integer
             commission: number
         example:
             sales_id: 10
             month: 2
             amount: 10000.00
-            seller_id: 10
+            sellers_id: 1
             commission: 300.89
 /auth/token:
     post:
@@ -144,8 +144,8 @@ types:
                         description: Seller's CPF number
                         example: 12345678910
                         required: true
-                    commission_plan:
-                        displayName: Commission plan
+                    plan:
+                        displayName: Plan
                         type: integer
                         description: Seller's chosen commission plan
                         example: 1
@@ -157,7 +157,7 @@ types:
                     age: 30
                     email: "email@email.com"
                     cpf: 12345678910
-                    commission_id: 1
+                    plan: 1
         responses:
             201:
                 body:
@@ -228,7 +228,7 @@ types:
         body:
             application/json:
                 properties:
-                    seller_id:
+                    sellers_id:
                         displayName: Seller's id
                         type: integer
                         description: Seller's id read from database
@@ -247,7 +247,7 @@ types:
                         example: 2
                         required: true
                 example:
-                    seller_id: 10
+                    sellers_id: 1
                     amount: 10000.00
                     month: 2
         responses:
@@ -290,7 +290,7 @@ types:
         body:
             application/json:
                 properties:
-                    seller_id:
+                    sellers_id:
                         displayName: Seller's ID
                         type: string
                         description: Seller's ID for commission check
@@ -303,7 +303,7 @@ types:
                         example: 1000.65
                         required: true
                 example:
-                    seller_id: 10
+                    sellers_id: 1
                     amount: 1000.65
         responses:
             201:
