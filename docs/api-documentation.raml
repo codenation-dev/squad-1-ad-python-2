@@ -1,9 +1,9 @@
 #%RAML 1.0
-title: Telesales Comission Calculator API
-baseUri: https://telesales-comission-calculator.herokuapp.com/
+title: Telesales Commission Calculator API
+baseUri: https://commission-squad1.herokuapp.com/
 protocols: [HTTP, HTTPS]
 mediaType: application/json
-description: API to calculate telesales comissions
+description: API to calculate telesales commissions
 version: 1.0.0
 securitySchemes: 
   JWT:
@@ -28,7 +28,7 @@ types:
             token: string
     Sellers:
         type: object
-        discriminator: seller_id
+        discriminator: sellers_id
         properties:
             client_id: integer
             name: string
@@ -39,24 +39,24 @@ types:
             cpf: integer
             comision_id: integer
         example:
-            seller_id: 1
+            sellers_id: 1
             name: "José Vendedor"
             address: "Rua abcd, 123"
             phone: 48012345678
             age: 30
             email: "email@email.com"
             cpf: 12345678910
-            comission_id: 1
-    Comissions:
+            plan: 1
+    Commissions:
         type: object
-        discriminator: comission_id
+        discriminator: commission_id
         properties:
-            comission_id: integer
+            commission_id: integer
             lower_percentage: number
             upper_percentage: number
             min_value: number
         example:
-            comission_id: 1
+            commission_id: 1
             lower_percentage: 2.5
             upper_percentage: 10.50
             min_value: 5000.00
@@ -67,14 +67,14 @@ types:
             sales_id: integer
             month: integer
             amount: number
-            seller_id: integer
-            comission: number
+            sellers_id: integer
+            commission: number
         example:
             sales_id: 10
             month: 2
             amount: 10000.00
-            seller_id: 10
-            comission: 300.89
+            sellers_id: 1
+            commission: 300.89
 /auth/token:
     post:
         description: Create an access token
@@ -144,10 +144,10 @@ types:
                         description: Seller's CPF number
                         example: 12345678910
                         required: true
-                    comission_plan:
-                        displayName: Comission plan
+                    plan:
+                        displayName: Plan
                         type: integer
-                        description: Seller's chosen comission plan
+                        description: Seller's chosen commission plan
                         example: 1
                         required: true
                 example:
@@ -157,7 +157,7 @@ types:
                     age: 30
                     email: "email@email.com"
                     cpf: 12345678910
-                    comission_id: 1
+                    plan: 1
         responses:
             201:
                 body:
@@ -175,9 +175,9 @@ types:
                 body:
                     application/json:
                         example: {"message": "Page not found on the server"}
-/comissions:
+/commissions:
     post:
-        description: Creates a comission plan and store it on the database
+        description: Creates a commission plan and store it on the database
         securedBy: JWT
         body:   
             application/json:
@@ -185,13 +185,13 @@ types:
                     lower_percentage:
                         displayName: Lower percentage
                         type: number
-                        description: Lower comission percentage
+                        description: Lower commission percentage
                         example: 2.5
                         required: true
                     upper_percentage:
                         displayName: Upper percentage
                         type: number
-                        description: Upper comission percentage
+                        description: Upper commission percentage
                         example: 10.50
                         required: true
                     min_value:
@@ -221,14 +221,14 @@ types:
                 body:
                     application/json:
                         example: {"message": "Page not found on the server"}
-/month_comission:
+/month_commission:
     post:
         description: Inputs total sales amount by month and seller
         securedBy: JWT
         body:
             application/json:
                 properties:
-                    seller_id:
+                    sellers_id:
                         displayName: Seller's id
                         type: integer
                         description: Seller's id read from database
@@ -247,14 +247,14 @@ types:
                         example: 2
                         required: true
                 example:
-                    seller_id: 10
+                    sellers_id: 1
                     amount: 10000.00
                     month: 2
         responses:
             201:
                 body:
                     application/json:
-                        example: {"id": 100, "comission": 300.89}
+                        example: {"id": 100, "commission": 300.89}
             400:
                 body:
                     application/json:
@@ -269,41 +269,41 @@ types:
                         example: {"message": "Page not found on the server"}
 /vendedores/{month}:
     get:
-        description: Retrieve seller's list, ordered by comissions
+        description: Retrieve seller's list, ordered by commissions
         securedBy: JWT
         responses:
             200:
                 body:
                     application/json:
-                        example: [{“name”: “Vendedor1”, “id”: 10, “comission”: 1000.00}, {“name”: “Vendedor2”, “id”: 15, “comission”: 900.00}]
+                        example: [{“name”: “Vendedor1”, “id”: 10, “commission”: 1000.00}, {“name”: “Vendedor2”, “id”: 15, “commission”: 900.00}]
             400:
                 body:
                     application/json:
                         example:
                             not_found:
                                 body: {"message": "Month not found"}
-                                description: When month_comission/month not found on the database
-/check_comission:
+                                description: When month_commission/month not found on the database
+/check_commission:
     post:
-        description: Calculates 5-month average comissions to seller and informs if seller should be notified
+        description: Calculates 5-month average commissions to seller and informs if seller should be notified
         securedBy: JWT
         body:
             application/json:
                 properties:
-                    seller_id:
+                    sellers_id:
                         displayName: Seller's ID
                         type: string
-                        description: Seller's ID for comission check
+                        description: Seller's ID for commission check
                         example: 10
                         required: true
                     amount:
                         displayName: Sales amount
                         type: number
-                        description: Total sales amount for comission verification
+                        description: Total sales amount for commission verification
                         example: 1000.65
                         required: true
                 example:
-                    seller_id: 10
+                    sellers_id: 1
                     amount: 1000.65
         responses:
             201:
