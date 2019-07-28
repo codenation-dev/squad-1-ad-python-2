@@ -35,13 +35,14 @@ Cadastro dos vendedores de telemarketing que irão receber comissões. Para o ca
 
 Exemplo de requisição para cadastrar um vendedor:
 
-POST /sellers
+    POST /sellers
 
-{“name”: “José Vendedor”, “address”: “Rua abcd, 123”, “telefone”: “48012345678”, “idade”: 30, “email”: “email@email.com”, “cpf”: “12345678910”, “commission_plan”: 1}
-Retorno:
+    {“name”: “José Vendedor”, “address”: “Rua abcd, 123”, “telefone”: “48012345678”, “idade”: 30, “email”: “email@email.com”, “cpf”: “12345678910”, “commission_plan”: 1}
 
-201 Created
-{“id”: 100}
+    Retorno:
+
+    201 Created
+    {“id”: 100}
 
 ### Cadastrar plano de comissões
 
@@ -67,13 +68,14 @@ Exemplo de requisição para cadastrar um plano de comissão:
 
 ## Registrar vendas mensais
 
-POST /commissions
+    POST /commissions
 
-{“lower_percentage”: 2.5, “min_value”: 5000.00, “upper_percentage”: 10.50}
-Retorno:
+    {“lower_percentage”: 2.5, “min_value”: 5000.00, “upper_percentage”: 10.50}
 
-201 Created
-{“id”: 10}
+    Retorno:
+
+    201 Created
+    {“id”: 10}
 
 ### Registrar vendas mensais
 
@@ -96,13 +98,14 @@ Ao registrar a venda de um vendedor será necessário também calcular o valor d
 
 ## Recuperar lista de vendedores ordenados pelo valor da comissão
 
-POST /month_commission
+    POST /month_commission
 
-{“seller”: 10, “amount”: 10000.00, “month”: 2}
-Retorno:
+    {“seller”: 10, “amount”: 10000.00, “month”: 2}
 
-200 OK
-{“id”: 100, “commission”: 300.89}
+    Retorno:
+
+    200 OK
+    {“id”: 100, “commission”: 300.89}
 
 ### Calcular comissão dos vendedores
 Ao registrar a venda de um vendedor será necessário também calcular o valor da comissão dele sobre as vendas. O cálculo da comissão deve verificar o valor da venda e calcular a porcentagem porcentagem de acordo com o plano de comissão que estiver cadastrado naquele vendedor. O resultado do cálculo da comissão deve ser armazenado para que seja possível consultar o histórico das comissões do vendedor. Esse cálculo deve ser feito quando a comissão for cadastrada considerando o plano escolhido pelo vendedor.
@@ -120,15 +123,6 @@ Exemplo de requisição para recuperar a lista de vendedores ordenados:
 
     200 OK
     [{“name”: “Vendedor1”, “id”: 10, “comission”: 1000.00}, {“name”: “Vendedor2”, “id”: 15, “comission”: 900.00}]
-
-## Enviar notificação aos vendedores que estão com a média de comissão baixa nos últimos meses
-
-GET /vendedores/2
-
-Resposta:
-
-200 OK
-[{“name”: “Vendedor1”, “id”: 10, “comission”: 1000.00}, {“name”: “Vendedor2”, “id”: 15, “comission”: 900.00}]
 
 ### Enviar notificação aos vendedores que estão com a média de comissão baixa nos últimos meses
 
@@ -155,15 +149,6 @@ Exemplo de requisição para verificar se o vendedor deve ser notificado:
     200 OK
     {“seller_notified”: true}
 
-## squad-1-ad-python-2
-
-POST /check_commision
-
-{“seller”: 10, “amount”: 1000.65}
-Resposta:
-
-200 OK
-{“should_notify”: true}
 ## Equipe: Squad 1
 
 ### Integrantes
