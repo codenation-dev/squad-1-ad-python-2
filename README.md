@@ -26,10 +26,11 @@ Cadastro dos planos de comissões para que os vendedores possam escolher qual o 
 
 Exemplo de planos:
 
-**Porcentagem Menor	Valor mínimo (para pagar a porcentagem maior)	Porcentagem maior**
-    2,5%	                R$15.000	                                    15%
-    5,0%	                R$50.000                                        12,5%
-    2,0%                    R$100.000                                       25%
+Porcentagem Menor | Valor mínimo (para pagar a porcentagem maior) | Porcentagem maior
+| :---: | :---: | :---: |
+2,5% | R$15.000 | 15%
+5,0% | R$50.000 | 12,5%
+2,0% | R$100.000 | 25%
 
 Exemplo de requisição para cadastrar um plano de comissão:
 
@@ -77,11 +78,12 @@ Exemplo de requisição para recuperar a lista de vendedores ordenados:
 ### Enviar notificação aos vendedores que estão com a média de comissão baixa nos últimos meses
 Enviar uma notificação via email para o vendedor que não obtiver um valor acima do cálculo da média de comissões. Para calcular a média do vendedor, deve calcular a média ponderada dos últimos 5 meses desse vendedor considerando os maiores valores com os maiores pesos e se ele estiver abaixo em pelo menos 10% do valor da média deve-se enviar uma notificação para ele. Exemplo:
 
-**Mês	Valor	Peso**
-  01	R$1000   2
-  02	R$500    1
-  03	R$1100   3
-**Média**	R$966,67
+Mês | Valor | Peso
+| :---: | :---: | :---: |
+01 | R$1000 | 2
+02 | R$500 | 1
+03 | R$1100 | 3
+**Média** | R$966,67 | 
 
 Esse vendedor não deve ser notificado caso o valor do mês atual seja maior do que 966,67 R$ - 10% (870,00 R$).
 
