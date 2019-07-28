@@ -55,5 +55,5 @@ def check_commission(request):
         serializer = CheckCommissionSerializer(data=request.data)
         if serializer.is_valid():
             cc = Sales()
-            return Response(cc.check_commission(request.data["sellers_id"], request.data["amount"]), status=status.HTTP_201_CREATED)
+            return Response(cc.check_commission(request.data["sellers_id"], request.data["amount"]), status=status.HTTP_200_OK)
         return Response({"message": "Bad request. Please check syntax and try again"}, status=status.HTTP_400_BAD_REQUEST)
