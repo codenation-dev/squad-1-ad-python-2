@@ -25,8 +25,8 @@ class Sellers(models.Model):
     address = models.CharField(max_length=200)
     phone = models.CharField(max_length=20)
     age = models.IntegerField()
-    email = models.EmailField(max_length=100)
-    cpf = models.CharField(max_length=11)
+    email = models.EmailField(max_length=100, unique=True)
+    cpf = models.CharField(max_length=11, unique=True)
     plan = models.ForeignKey(Commission_plan, on_delete=models.CASCADE, verbose_name="plan")
 
     def __str__(self):
@@ -44,7 +44,8 @@ class Sales(models.Model):
     
     def calc_commission(self, seller, amount):
         if not Sellers.objects.filter(id=seller):
-            return "Vendedor não cadastrado. Favor verificar os dados de entrada."
+            return Response({"message": "Not found. Please check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND)
         else:
             sel_calc = Sellers.objects.get(id=seller)
             dec_amount = MyDecimal(amount)
@@ -63,11 +64,12 @@ class Sales(models.Model):
             s.save()
             return {"id": s.id, "commission": MyDecimal(s.commission)}
         else:
-            return "Venda já cadastrada para este mês"
+            return Response({"message": "Conflict. Data already on the server"}, status=status.HTTP_409_CONFLICT)
 
     def return_sellers(self, month):
         if not Sales.objects.filter(month=month):
-            return "Não existem vendas cadastradas para este mês. Favor verificar os dados de entrada"
+            return Response({"message": "Not Found. Please check entered data and try again"}, 
+                            status=status.HTTP_400_NOT_FOUND)
         else:
             s = Sales.objects.select_related('sellers_id').filter(month=month)
             return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)}
@@ -75,7 +77,8 @@ class Sales(models.Model):
 
     def notify_seller(self, seller, month):
         if not Sales.objects.filter(sellers_id=seller, month=month):
-            return "Dados incorretos. Favor verificar e tentar novamente."
+            return Response({"message": "Not Found. Please check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND)
         else:
             send_mail(
                     'Notificação - valor de vendas',
@@ -89,7 +92,8 @@ class Sales(models.Model):
         month = datetime.datetime.now().month
         db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
         if not db_fetch:
-            return "Vendedor não cadastrado. Favor verificar os dados de entrada."
+            return Response({"message": "Not Found. Please check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND)
         else:
             for i in range(len(db_fetch)):
                 if db_fetch[i].month == month:
