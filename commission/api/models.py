@@ -79,6 +79,7 @@ class Sales(models.Model):
         if not Sales.objects.filter(sellers_id=seller, month=month):
             return Response({"message": "Not Found. Please check entered data and try again"},
                             status=status.HTTP_404_NOT_FOUND)
+
         else:
             send_mail(
                     'Notificação - valor de vendas',
