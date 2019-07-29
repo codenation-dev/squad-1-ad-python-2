@@ -2,7 +2,10 @@ from django.db import models
 from decimal import Decimal
 import datetime
 <<<<<<< HEAD:api/models.py
+<<<<<<< HEAD:api/models.py
 =======
+=======
+>>>>>>> 6680e074cb6f9487a97891d16aa1047b942b04cc:commission/api/models.py
 from django.core.validators import validate_email
 from operator import itemgetter as ig
 >>>>>>> Criado tests.py:commission/api/models.py
