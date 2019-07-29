@@ -8,7 +8,9 @@ class TelesalesViewTestCase(TestCase):
     def setUp(self):
         # Create user
         self.user = User.objects.create_user(
-            username="usuario", email="usuario@email.com", password="pass"
+            username="usuario",
+            email="usuario@email.com",
+            password="pass"
         )
         self.user.save()
 
