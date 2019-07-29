@@ -1,8 +1,14 @@
 from django.db import models
 from decimal import Decimal
 import datetime
+<<<<<<< HEAD:api/models.py
+<<<<<<< HEAD:api/models.py
+=======
+=======
+>>>>>>> 6680e074cb6f9487a97891d16aa1047b942b04cc:commission/api/models.py
 from django.core.validators import validate_email
 from operator import itemgetter as ig
+>>>>>>> Criado tests.py:commission/api/models.py
 from django.core.mail import send_mail
 
 
@@ -34,14 +40,29 @@ class Sellers(models.Model):
 
 
 class Sales(models.Model):
-    month = models.IntegerField()
+    MONTHS = (
+        (1, 'Janeiro'),
+        (2, 'Fevereiro'),
+        (3, 'Março'),
+        (4, 'Abril'),
+        (5, 'Maio'),
+        (6, 'Junho'),
+        (7, 'Julho'),
+        (8, 'Agosto'),
+        (9, 'Setembro'),
+        (10, 'Outubro'),
+        (11, 'Novembro'),
+        (12, 'Dezembro'),
+    )
+
+    month = models.IntegerField(choices=MONTHS)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     sellers_id = models.ForeignKey(Sellers, on_delete=models.CASCADE, primary_key=False, verbose_name="sid")
     commission = models.DecimalField(max_digits=20, decimal_places=2)
 
     def __str__(self):
         return "Seller: %s" % self.sellers_id.name
-    
+
     def calc_commission(self, seller, amount):
         if not Sellers.objects.filter(id=seller):
             return 404
@@ -62,6 +83,7 @@ class Sales(models.Model):
             s.commission = self.calc_commission(seller, month_amount)
             s.save()
             return {"id": s.id, "commission": MyDecimal(s.commission)}
+
         else:
             return 409
 
@@ -71,20 +93,20 @@ class Sales(models.Model):
         else:
             s = Sales.objects.select_related('sellers_id').filter(month=month)
             return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)}
-                          for i in s], key=lambda x: x['commission'], reverse=True)
+                           for i in s], key=lambda x: x['commission'], reverse=True)
 
     def notify_seller(self, seller, month):
         if not Sales.objects.filter(sellers_id=seller, month=month):
             return 404
         else:
             send_mail(
-                    'Notificação - valor de vendas',
-                    'Suas vendas no mês estão abaixo da média mensal.',
-                    'commission_admin@mail.com',
-                    [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
-                    fail_silently=False
+                'Notificação - valor de vendas',
+                'Suas vendas no mês estão abaixo da média mensal.',
+                'commission_admin@mail.com',
+                [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
+                fail_silently=False
             )
-    
+
     def check_commission(self, seller, amount):
         month = datetime.datetime.now().month
         db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
@@ -94,13 +116,13 @@ class Sales(models.Model):
             for i in range(len(db_fetch)):
                 if db_fetch[i].month == month:
                     db_fetch[i].amount = MyDecimal(amount)
-                    db_fetch[i].commission = calc_commission(seller, amount)
+                    db_fetch[i].commission = self.calc_commission(seller, amount)
                 db_fetch.order_by('-commission')
-            avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) / 
+            avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) /
                          sum([len(db_fetch) - i for i in range(len(db_fetch))]))
             cut_amount = avg_sales - (avg_sales * 10 / 100)
             notify = ([db_fetch[i].amount for i in range(len(db_fetch)) if db_fetch[i].amount < cut_amount and
-                    db_fetch[i].month == month])
+                       db_fetch[i].month == month])
             if not notify:
                 out_message = {"seller_notified": False}
             else:

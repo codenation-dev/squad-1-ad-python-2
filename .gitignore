@@ -1,6 +1,7 @@
 # .gitignore para Python
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 .vscode
+.idea
 
 # Pasta do ambiente virtual
 # python -m venv dev_django
