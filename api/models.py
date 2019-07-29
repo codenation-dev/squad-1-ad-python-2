@@ -1,6 +1,11 @@
 from django.db import models
 from decimal import Decimal
 import datetime
+<<<<<<< HEAD:api/models.py
+=======
+from django.core.validators import validate_email
+from operator import itemgetter as ig
+>>>>>>> Criado tests.py:commission/api/models.py
 from django.core.mail import send_mail
 
 
@@ -23,7 +28,7 @@ class Sellers(models.Model):
     address = models.CharField(max_length=200)
     phone = models.CharField(max_length=20)
     age = models.IntegerField()
-    email = models.EmailField(max_length=100, unique=True)
+    email = models.EmailField(max_length=100, blank=False, unique=True, validators=[validate_email])
     cpf = models.CharField(max_length=11, unique=True)
     plan = models.ForeignKey(Commission_plan, on_delete=models.CASCADE, verbose_name="plan")
 
@@ -57,8 +62,7 @@ class Sales(models.Model):
 
     def calc_commission(self, seller, amount):
         if not Sellers.objects.filter(id=seller):
-            return Response({"message": "Not found. Please check entered data and try again"},
-                            status=status.HTTP_404_NOT_FOUND)
+            return 404
         else:
             sel_calc = Sellers.objects.get(id=seller)
             dec_amount = MyDecimal(amount)
@@ -78,12 +82,11 @@ class Sales(models.Model):
             return {"id": s.id, "commission": MyDecimal(s.commission)}
 
         else:
-            return Response({"message": "Conflict. Data already on the server"}, status=status.HTTP_409_CONFLICT)
+            return 409
 
     def return_sellers(self, month):
         if not Sales.objects.filter(month=month):
-            return Response({"message": "Not Found. Please check entered data and try again"}, 
-                            status=status.HTTP_400_NOT_FOUND)
+            return 404
         else:
             s = Sales.objects.select_related('sellers_id').filter(month=month)
             return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)}
@@ -91,9 +94,7 @@ class Sales(models.Model):
 
     def notify_seller(self, seller, month):
         if not Sales.objects.filter(sellers_id=seller, month=month):
-            return Response({"message": "Not Found. Please check entered data and try again"},
-                            status=status.HTTP_404_NOT_FOUND)
-
+            return 404
         else:
             send_mail(
                 'Notificação - valor de vendas',
@@ -107,8 +108,7 @@ class Sales(models.Model):
         month = datetime.datetime.now().month
         db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
         if not db_fetch:
-            return Response({"message": "Not Found. Please check entered data and try again"},
-                            status=status.HTTP_404_NOT_FOUND)
+            return 404
         else:
             for i in range(len(db_fetch)):
                 if db_fetch[i].month == month:
