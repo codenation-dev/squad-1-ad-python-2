@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
-from api.models import Commission_plan, Sellers, Sales
+from api.models import * # Commission_plan, Sellers, Sales
 from decimal import Decimal
 
 
@@ -183,8 +183,8 @@ class ModelsTestCase(TestCase):
 
     def test_return_sellers(self):
         self.assertEqual(len(Sales.return_sellers(self, 1)), 2)
-        self.assertEqual(Sales.return_sellers(self, 2), 404)
+        self.assertEqual(Sales.return_sellers(self, 2).status_code, 404)
 
     def test_check_commission(self):
-        self.assertEqual(Sales.check_commission(self, 1, 1325.00), {"seller_notified": False})
-        self.assertEqual(Sales.check_commission(self, 2, 3200.00), {"seller_notified": False})
+        self.assertEqual(Sales.check_commission(Sales ,1, 1325.00), {"seller_notified": False})
+        self.assertEqual(Sales.check_commission(Sales, 2, 3200.00), {"seller_notified": True})
