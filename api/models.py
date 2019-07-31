@@ -4,6 +4,8 @@ import datetime
 from django.core.validators import validate_email
 from operator import itemgetter as ig
 from django.core.mail import send_mail
+from rest_framework import status
+from rest_framework.response import Response
 
 
 class MyDecimal(Decimal):
@@ -59,7 +61,8 @@ class Sales(models.Model):
 
     def calc_commission(self, seller, amount):
         if not Sellers.objects.filter(id=seller):
-            return 404
+            return Response({"message": "Seller not found. Check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND)
         else:
             sel_calc = Sellers.objects.get(id=seller)
             dec_amount = MyDecimal(amount)
@@ -70,7 +73,7 @@ class Sales(models.Model):
         return MyDecimal(round(commission, 2))
 
     def sales_month(self, seller, amount, month):
-        if not Sales.objects.filter(month=month):
+        if not Sales.objects.filter(sellers_id=seller, month=month):
             sel_month = Sellers.objects.get(id=seller)
             month_amount = MyDecimal(amount)
             s = Sales(sellers_id=sel_month, amount=month_amount, month=month)
@@ -79,47 +82,44 @@ class Sales(models.Model):
             return {"id": s.id, "commission": MyDecimal(s.commission)}
 
         else:
-            return 409
+            return Response({"message": "Conflict. Check entered data and try again"},
+                            status=status.HTTP_409_CONFLICT)
 
     def return_sellers(self, month):
         if not Sales.objects.filter(month=month):
-            return 404
+            return Response({"message": "Sales not found. Check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND)
         else:
             s = Sales.objects.select_related('sellers_id').filter(month=month)
             return sorted([{"name": i.sellers_id.name, "id": i.sellers_id.id, "commission": MyDecimal(i.commission)}
                            for i in s], key=lambda x: x['commission'], reverse=True)
 
-    def notify_seller(self, seller, month):
-        if not Sales.objects.filter(sellers_id=seller, month=month):
-            return 404
-        else:
-            send_mail(
-                'Notificação - valor de vendas',
-                'Suas vendas no mês estão abaixo da média mensal.',
-                'commission_admin@mail.com',
-                [Sales.objects.get(sellers_id=seller, month=month).sellers_id.email],
-                fail_silently=False
-            )
+    def notify_seller(self, seller, email):
+        send_mail(
+            'Notificação - valor de vendas',
+            'Suas vendas no mês estão abaixo da média mensal.',
+            'commission_admin@mail.com',
+            [email],
+            fail_silently=False
+        )
 
     def check_commission(self, seller, amount):
-        month = datetime.datetime.now().month
-        db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
-        if not db_fetch:
-            return 404
+        if not Sellers.objects.filter(id=seller).exists():
+            return (Response({"message": "Seller not found. Check entered data and try again"},
+                            status=status.HTTP_404_NOT_FOUND))
         else:
-            for i in range(len(db_fetch)):
-                if db_fetch[i].month == month:
-                    db_fetch[i].amount = MyDecimal(amount)
-                    db_fetch[i].commission = self.calc_commission(seller, amount)
-                db_fetch.order_by('-commission')
-            avg_sales = (sum([db_fetch[i].amount * (len(db_fetch) - i) for i in range(len(db_fetch))]) /
-                         sum([len(db_fetch) - i for i in range(len(db_fetch))]))
-            cut_amount = avg_sales - (avg_sales * 10 / 100)
-            notify = ([db_fetch[i].amount for i in range(len(db_fetch)) if db_fetch[i].amount < cut_amount and
-                       db_fetch[i].month == month])
-            if not notify:
-                out_message = {"seller_notified": False}
+            db_fetch = Sales.objects.select_related('sellers_id').filter(sellers_id=seller)
+            if not db_fetch:
+                sales_list = [MyDecimal(amount)]
             else:
+                mail = db_fetch[0].sellers_id.email
+                sales_list = [db_fetch[i].amount for i in range(len(db_fetch))][-5:]
+            avg_sales = (sum([sales_list[i] * (len(sales_list) - i) for i in range(len(sales_list))]) /
+                         sum([len(sales_list) - i for i in range(len(sales_list))]))
+            cut_amount = avg_sales - (avg_sales * 10 / 100)
+            if amount < cut_amount:
                 out_message = {"seller_notified": True}
-                self.notify_seller(seller, month)
-            return out_message
+                Sales.notify_seller(self, seller, mail)
+            else:
+                out_message = {"seller_notified": False}
+        return out_message

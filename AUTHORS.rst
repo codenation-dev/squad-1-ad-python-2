@@ -1,7 +1,12 @@
-*******
+=======
 Credits
-*******
+=======
 Squad 1 - AceleraDev Python para Web - Codenation.AceleraDev
+
+================
+Development Lead
+================
+* Alexandre Proença (`@AlexandreProenca <https://github.com/AlexandreProenca>`_)
 
 ============
 Development
