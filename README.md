@@ -60,10 +60,10 @@ Exemplo de requisição para calcular o valor da comissão do vendedor:
     200 OK
     {“id”: 100, “comission”: 300.89}
 
-## Calcular comissão dos vendedores
+### Calcular comissão dos vendedores
 Ao registrar a venda de um vendedor será necessário também calcular o valor da comissão dele sobre as vendas. O cálculo da comissão deve verificar o valor da venda e calcular a porcentagem porcentagem de acordo com o plano de comissão que estiver cadastrado naquele vendedor. O resultado do cálculo da comissão deve ser armazenado para que **seja possível consultar o histórico das comissões do vendedor. Esse cálculo deve ser feito quando a comissão for cadastrada considerando o plano escolhido pelo vendedor.**
 
-## Recuperar lista de vendedores ordenados pelo valor da comissão
+### Recuperar lista de vendedores ordenados pelo valor da comissão
 Recuperar a lista dos vendedores ordenados pelo valor de suas comissões. Para consultar a lista será necessário informar qual o mês atual para que possa ser feito o filtro e a ordenação dos valores. Quando o vendedor não tiver comissão no mês selecionado deve-se considerar 0,00 R$. **OBS: Esse endpoint pode ser feito juntamente com o endpoint de vendedores mas não é obrigatório.**
 
 Exemplo de requisição para recuperar a lista de vendedores ordenados:
