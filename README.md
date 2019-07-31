@@ -1,5 +1,5 @@
 
-# Gestão de comissões Televendas
+# Gestão de Comissões - Televendas
 ## Objetivo
 O objetivo desse produto é de calcular a comissão que cada vendedor do sistema ao longo dos meses seguindo a regra de comissão selecionada na hora que o vendedor for cadastrado. Seu objetivo é implementar os requisitos listados abaixo e criar uma API para que diferentes front-ends possam interagir com o seu sistema.
 
