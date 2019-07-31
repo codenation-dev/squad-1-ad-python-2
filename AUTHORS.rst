@@ -1,6 +1,6 @@
-*******
+=======
 Credits
-*******
+=======
 Squad 1 - AceleraDev Python para Web - Codenation.AceleraDev
 
 ============
